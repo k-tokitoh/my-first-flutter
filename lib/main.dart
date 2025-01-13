@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 // ウィジェットは、すべての Flutter アプリを作成する際の元になる要素です。ご覧のように、このアプリ自体がウィジェットです。
@@ -40,15 +40,22 @@ class MyAppState extends ChangeNotifier {
 
   void toggleFavorite() {
     if (favorites.contains(current)) {
-      favorites.remove(current);
+      removeFavorite(current);
     } else {
       favorites.add(current);
+      notifyListeners();
     }
+  }
+
+  void removeFavorite(WordPair pair) {
+    favorites.remove(pair);
     notifyListeners();
   }
 }
 
 class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key});
+
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
@@ -61,13 +68,17 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     Widget page;
+
+    page = GeneratorPage();
+
     switch (selectedIndex) {
       case 0:
         page = GeneratorPage();
         break;
       case 1:
         // Placeholderは仮置きのwidget
-        page = Placeholder();
+        // page = const Placeholder();
+        page = FavoritesPage();
         break;
       default:
         throw UnimplementedError('no widget for $selectedIndex');
@@ -84,7 +95,7 @@ class _MyHomePageState extends State<MyHomePage> {
               child: NavigationRail(
                 // extended: falseだとアイコンのみ、trueだとラベルも表示する
                 extended: constraints.maxWidth > 600,
-                destinations: [
+                destinations: const [
                   NavigationRailDestination(
                     icon: Icon(Icons.home),
                     label: Text('Home'),
@@ -118,6 +129,8 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 class GeneratorPage extends StatelessWidget {
+  const GeneratorPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
@@ -136,7 +149,7 @@ class GeneratorPage extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           BigCard(pair: pair),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -146,14 +159,14 @@ class GeneratorPage extends StatelessWidget {
                   appState.toggleFavorite();
                 },
                 icon: Icon(icon),
-                label: Text('Like'),
+                label: const Text('Like'),
               ),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               ElevatedButton(
                 onPressed: () {
                   appState.getNext();
                 },
-                child: Text('Next'),
+                child: const Text('Next'),
               ),
             ],
           ),
@@ -197,6 +210,42 @@ class BigCard extends StatelessWidget {
           semanticsLabel: '${pair.first} ${pair.second}',
         ),
       ),
+    );
+  }
+}
+
+class FavoritesPage extends StatelessWidget {
+  const FavoritesPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+
+    if (appState.favorites.isEmpty) {
+      return const Center(
+        child: Text('No favorites yet!'),
+      );
+    }
+    // return Text(appState.current.asCamelCase);
+    return ListView(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(20),
+          child: Text('You have '
+              '${appState.favorites.length} favorites:'),
+        ),
+        ...appState.favorites.map((pair) {
+          return ListTile(
+              leading: const Icon(Icons.square),
+              title: Text(pair.asLowerCase),
+              trailing: ElevatedButton(
+                child: Text('delete'),
+                onPressed: () {
+                  appState.removeFavorite(pair);
+                },
+              ));
+        }).toList()
+      ],
     );
   }
 }
